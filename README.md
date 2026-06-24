@@ -4,7 +4,7 @@
 
 Trải nghiệm trực tiếp tại:
 
-[Chess AI Dashboard Web App](DAN_LINK_RENDER_VAO_DAY)
+[Chess AI Dashboard Web App]([DAN_LINK_RENDER_VAO_DAY](https://chess-ai-dashboard.onrender.com))
 
 ---
 
