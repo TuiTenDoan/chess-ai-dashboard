@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Chess AI Dashboard - Đồ án Cờ Vua AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-icon">♟</div>
+            <div>
+                <h1>Chess AI Dashboard</h1>
+                <p>Hệ thống web đánh cờ vua tích hợp thuật toán AI Minimax và Alpha-Beta Pruning</p>
+            </div>
+        </div>
+
+        <div class="top-actions">
+            <span class="pill online">AI Online</span>
+            <span class="pill">Flask + Python</span>
+        </div>
+    </header>
+
+    <main class="page">
+        <section class="hero-card">
+            <div class="hero-content">
+                <h2>Đồ án: Web Game Cờ Vua Tích Hợp AI</h2>
+                <p>
+                    Người chơi điều khiển quân Trắng, hệ thống AI điều khiển quân Đen.
+                    AI sử dụng thuật toán tìm kiếm nước đi Minimax kết hợp Alpha-Beta Pruning
+                    để tính toán và lựa chọn nước đi tối ưu.
+                </p>
+
+                <div class="hero-stats">
+                    <div>
+                        <strong>8x8</strong>
+                        <span>Bàn cờ tiêu chuẩn</span>
+                    </div>
+                    <div>
+                        <strong>AI</strong>
+                        <span>Minimax Search</span>
+                    </div>
+                    <div>
+                        <strong>Web</strong>
+                        <span>Python Flask</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="algorithm-box">
+                <h3>Thuật toán AI</h3>
+                <ul>
+                    <li>Minimax tìm kiếm các trạng thái bàn cờ.</li>
+                    <li>Alpha-Beta Pruning giảm số nhánh cần duyệt.</li>
+                    <li>Hàm đánh giá dựa trên giá trị quân cờ và kiểm soát trung tâm.</li>
+                    <li>AI ưu tiên nước đi ăn quân, chiếu vua và phong cấp.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="main-grid">
+            <section class="game-panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Bàn Cờ Thi Đấu</h2>
+                        <p>Bạn cầm quân Trắng. Click quân cần đi, sau đó click ô đích.</p>
+                    </div>
+
+                    <div class="controls">
+                        <label for="depthSelect">Độ sâu AI</label>
+                        <select id="depthSelect">
+                            <option value="1">Dễ - Depth 1</option>
+                            <option value="2">Trung bình - Depth 2</option>
+                            <option value="3" selected>Khó - Depth 3</option>
+                            <option value="4">Rất khó - Depth 4</option>
+                        </select>
+
+                        <button onclick="newGame()">Ván mới</button>
+                    </div>
+                </div>
+
+                <div class="board-wrap">
+                    <div class="rank-labels">
+                        <span>8</span><span>7</span><span>6</span><span>5</span>
+                        <span>4</span><span>3</span><span>2</span><span>1</span>
+                    </div>
+
+                    <div id="chessBoard" class="chess-board"></div>
+                </div>
+
+                <div class="file-labels">
+                    <span>a</span><span>b</span><span>c</span><span>d</span>
+                    <span>e</span><span>f</span><span>g</span><span>h</span>
+                </div>
+            </section>
+
+            <aside class="side-panel">
+                <div class="card status-card">
+                    <h2>Trạng thái ván đấu</h2>
+
+                    <div class="info-row">
+                        <span>Người chơi</span>
+                        <b>Quân Trắng</b>
+                    </div>
+
+                    <div class="info-row">
+                        <span>AI</span>
+                        <b>Quân Đen</b>
+                    </div>
+
+                    <div class="info-row">
+                        <span>Thuật toán</span>
+                        <b>Minimax + Alpha-Beta</b>
+                    </div>
+
+                    <div class="info-row">
+                        <span>Trạng thái</span>
+                        <b id="statusText">Đang tải...</b>
+                    </div>
+                </div>
+
+                <div class="card message-card">
+                    <h2>Thông báo hệ thống</h2>
+                    <p id="messageText">Hãy bắt đầu ván mới.</p>
+                </div>
+
+                <div class="card link-card">
+                    <h2>Link Trải Nghiệm Game</h2>
+                    <p>Trải nghiệm trực tiếp tại:</p>
+                    <a href="#" target="_blank">Chess AI Dashboard Web App</a>
+                </div>
+
+                <div class="card history-card">
+                    <h2>Lịch sử nước đi</h2>
+                    <div id="moveHistory" class="move-history"></div>
+                </div>
+
+                <div class="card student-card">
+                    <h2>Thông tin đồ án</h2>
+                    <p><b>Sinh viên:</b> Nguyễn Tâm Đoan</p>
+                    <p><b>Mã số sinh viên:</b> 247060005</p>
+                    <p><b>Trường:</b> TDU</p>
+                    <p><b>Đề tài:</b> Xây dựng web game cờ vua tích hợp AI</p>
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Chess AI Dashboard - Flask, Python, HTML, CSS, JavaScript</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
