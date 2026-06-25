@@ -12,7 +12,7 @@ Cờ vua là một trò chơi trí tuệ có tính chiến thuật cao, trong đ
 
 Đề tài **Chess AI Dashboard** được xây dựng nhằm tạo ra một website chơi cờ vua đơn giản, trong đó người chơi điều khiển quân Trắng và AI điều khiển quân Đen. Hệ thống cho phép người dùng thực hiện nước đi trực tiếp trên bàn cờ, sau đó AI sẽ tính toán và phản hồi bằng một nước đi phù hợp.
 
-Trong đề tài này, AI được xây dựng dựa trên thuật toán **Minimax**, kết hợp với kỹ thuật tối ưu **Alpha-Beta Pruning** và **hàm đánh giá bàn cờ**. Đây là ba thành phần chính giúp hệ thống có thể phân tích trạng thái ván cờ và lựa chọn nước đi hợp lý.
+Trong đề tài này, AI được xây dựng dựa trên thuật toán **Minimax**, kết hợp với kỹ thuật tối ưu **Alpha-Beta Pruning** và **Heuristic**. Đây là ba thành phần chính giúp hệ thống có thể phân tích trạng thái ván cờ và lựa chọn nước đi hợp lý.
 
 ---
 
@@ -27,7 +27,7 @@ Các mục tiêu cụ thể gồm:
 * Xây dựng AI có khả năng tự động chọn nước đi.
 * Áp dụng thuật toán Minimax để mô phỏng quá trình ra quyết định.
 * Tối ưu tốc độ tìm kiếm bằng Alpha-Beta Pruning.
-* Xây dựng hàm đánh giá bàn cờ để AI xác định bên nào đang có lợi thế.
+* Xây dựng Heuristic để AI xác định bên nào đang có lợi thế.
 * Triển khai website để người dùng có thể truy cập và trải nghiệm trực tuyến.
 
 ---
@@ -150,7 +150,7 @@ Trong dự án này, AI chơi cờ được xây dựng dựa trên ba thành ph
 
 * Thuật toán Minimax.
 * Thuật toán Alpha-Beta Pruning.
-* Hàm đánh giá bàn cờ.
+* Heuristic.
 
 Ba thành phần này kết hợp với nhau để giúp AI phân tích các nước đi có thể xảy ra, đánh giá lợi thế của từng trạng thái bàn cờ và chọn ra nước đi phù hợp nhất.
 
@@ -239,13 +239,15 @@ Alpha-Beta Pruning giúp AI chọn nước đi tốt nhanh hơn.
 
 ---
 
-## Hàm Đánh Giá Bàn Cờ
+## Heuristic
 
-Trong thực tế, AI không thể tính toán toàn bộ ván cờ từ đầu đến cuối vì số lượng khả năng là rất lớn. Do đó, tại một độ sâu nhất định, AI cần một hàm để đánh giá trạng thái bàn cờ hiện tại.
+Trong thực tế, AI không thể tính toán toàn bộ ván cờ từ đầu đến cuối vì số lượng khả năng là rất lớn. Do đó, tại một độ sâu nhất định, AI cần một phương pháp để đánh giá trạng thái bàn cờ hiện tại.
 
-Hàm đánh giá bàn cờ có nhiệm vụ chấm điểm một thế cờ để xác định bên nào đang có lợi.
+Phương pháp đó được gọi là **Heuristic**.
 
-Trong đề tài này, hàm đánh giá dựa trên các yếu tố chính sau:
+Heuristic có nhiệm vụ chấm điểm một thế cờ để xác định bên nào đang có lợi.
+
+Trong đề tài này, Heuristic dựa trên các yếu tố chính sau:
 
 * Trạng thái chiếu hết.
 * Trạng thái hòa.
@@ -284,7 +286,7 @@ Vì AI điều khiển quân Đen, nên AI sẽ ưu tiên những trạng thái 
 
 Trong cờ vua, các ô trung tâm có vai trò rất quan trọng. Quân cờ đứng ở trung tâm thường kiểm soát được nhiều ô hơn và có khả năng di chuyển linh hoạt hơn.
 
-Vì vậy, hàm đánh giá cộng thêm điểm cho các quân đứng gần trung tâm bàn cờ.
+Vì vậy, Heuristic cộng thêm điểm cho các quân đứng gần trung tâm bàn cờ.
 
 Điều này giúp AI không chỉ quan tâm đến việc ăn quân, mà còn biết phát triển quân đến những vị trí tốt hơn.
 
@@ -292,14 +294,14 @@ Vì vậy, hàm đánh giá cộng thêm điểm cho các quân đứng gần tr
 
 Nếu một bên bị chiếu, trạng thái đó sẽ được đánh giá là bất lợi cho bên bị chiếu.
 
-Nếu một bên bị chiếu hết, hàm đánh giá sẽ trả về điểm rất lớn hoặc rất nhỏ để AI ưu tiên trạng thái thắng và tránh trạng thái thua.
+Nếu một bên bị chiếu hết, Heuristic sẽ trả về điểm rất lớn hoặc rất nhỏ để AI ưu tiên trạng thái thắng và tránh trạng thái thua.
 
 Cụ thể:
 
 * Nếu Trắng bị chiếu hết, Đen thắng, đây là trạng thái rất tốt cho AI.
 * Nếu Đen bị chiếu hết, AI thua, đây là trạng thái rất xấu cần tránh.
 
-### Tổng kết hàm đánh giá
+### Tổng kết Heuristic
 
 Có thể hiểu công thức tổng quát như sau:
 
@@ -311,7 +313,7 @@ Giá trị quân Trắng
 + Điểm trạng thái chiếu
 ```
 
-Hàm đánh giá là thành phần rất quan trọng vì nó quyết định cách AI nhìn nhận một thế cờ. Nếu hàm đánh giá tốt, AI sẽ có xu hướng chọn những nước đi hợp lý hơn.
+Heuristic là thành phần rất quan trọng vì nó quyết định cách AI nhìn nhận một thế cờ. Nếu Heuristic tốt, AI sẽ có xu hướng chọn những nước đi hợp lý hơn.
 
 ---
 
@@ -326,7 +328,7 @@ Quy trình hoạt động của hệ thống có thể mô tả như sau:
 * Backend kiểm tra nước đi có hợp lệ hay không.
 * Nếu hợp lệ, backend cập nhật trạng thái bàn cờ.
 * AI sử dụng Minimax kết hợp Alpha-Beta Pruning để tìm nước đi tốt nhất.
-* Hàm đánh giá bàn cờ được dùng để chấm điểm các trạng thái có thể xảy ra.
+* Heuristic được dùng để chấm điểm các trạng thái có thể xảy ra.
 * AI chọn nước đi phù hợp và cập nhật bàn cờ.
 * Backend gửi trạng thái mới về frontend.
 * Frontend cập nhật lại giao diện và lịch sử nước đi.
