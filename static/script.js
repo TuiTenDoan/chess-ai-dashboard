@@ -3,6 +3,12 @@ let selectedSquare = null;
 let legalMoves = [];
 let moveHistory = [];
 
+// Khóa bàn cờ khi AI đang tính
+let isThinking = false;
+
+// Dùng để chống request cũ ghi đè request mới
+let gameVersion = 0;
+
 const pieceMap = {
     "P": { symbol: "♙", color: "white" },
     "N": { symbol: "♘", color: "white" },
@@ -24,68 +30,124 @@ window.onload = () => {
 };
 
 async function newGame() {
-    const res = await fetch("/api/new", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-    });
+    // Tăng phiên ván cờ để bỏ qua response cũ nếu có
+    gameVersion++;
 
-    const data = await res.json();
-
-    currentFen = data.fen;
-    legalMoves = data.legal_moves;
+    isThinking = false;
     selectedSquare = null;
     moveHistory = [];
 
-    updateUI(data);
+    setMessage("Đang tạo ván mới...");
+
+    try {
+        const res = await fetch("/api/new", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+
+        const data = await res.json();
+
+        currentFen = data.fen;
+        legalMoves = data.legal_moves;
+        selectedSquare = null;
+        moveHistory = [];
+
+        updateUI(data);
+
+    } catch (error) {
+        console.error(error);
+        setMessage("Không thể tạo ván mới. Vui lòng kiểm tra server.");
+    }
 }
 
 async function sendMove(move) {
-    const depth = document.getElementById("depthSelect").value;
-    document.getElementById("messageText").innerText = "AI đang tính toán nước đi...";
-
-    const res = await fetch("/api/move", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            fen: currentFen,
-            move: move,
-            depth: depth
-        })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-        document.getElementById("messageText").innerText = data.message || "Nước đi không hợp lệ.";
-        selectedSquare = null;
-        renderBoard();
+    if (isThinking) {
         return;
     }
 
-    currentFen = data.fen;
-    legalMoves = data.legal_moves;
+    isThinking = true;
     selectedSquare = null;
 
-    if (data.player_move) {
-        moveHistory.push("Người chơi: " + data.player_move);
-    }
+    const thisGameVersion = gameVersion;
+    const depth = document.getElementById("depthSelect").value;
 
-    if (data.ai_move) {
-        moveHistory.push("AI: " + data.ai_move);
-    }
+    setMessage("AI đang tính toán nước đi...");
+    renderBoard();
 
-    updateUI(data);
+    try {
+        const res = await fetch("/api/move", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                fen: currentFen,
+                move: move,
+                depth: depth
+            })
+        });
+
+        const data = await res.json();
+
+        // Nếu trong lúc AI đang tính mà người dùng bấm ván mới,
+        // response cũ sẽ bị bỏ qua, không được ghi đè bàn cờ mới.
+        if (thisGameVersion !== gameVersion) {
+            return;
+        }
+
+        if (!res.ok) {
+            setMessage(data.message || "Nước đi không hợp lệ.");
+            selectedSquare = null;
+            return;
+        }
+
+        currentFen = data.fen;
+        legalMoves = data.legal_moves;
+        selectedSquare = null;
+
+        if (data.player_move) {
+            moveHistory.push("Người chơi: " + data.player_move);
+        }
+
+        if (data.ai_move) {
+            moveHistory.push("AI: " + data.ai_move);
+        }
+
+        updateUI(data);
+
+    } catch (error) {
+        console.error(error);
+        setMessage("Lỗi kết nối server. Vui lòng thử lại.");
+
+    } finally {
+        if (thisGameVersion === gameVersion) {
+            isThinking = false;
+            selectedSquare = null;
+            renderBoard();
+        }
+    }
 }
 
 function updateUI(data) {
     document.getElementById("statusText").innerText = data.status;
     document.getElementById("messageText").innerText = data.message;
+
     renderHistory();
     renderBoard();
 }
 
+function setMessage(message) {
+    const messageText = document.getElementById("messageText");
+
+    if (messageText) {
+        messageText.innerText = message;
+    }
+}
+
 function renderHistory() {
     const box = document.getElementById("moveHistory");
+
+    if (!box) {
+        return;
+    }
 
     if (moveHistory.length === 0) {
         box.innerHTML = "<div>Chưa có nước đi.</div>";
@@ -101,7 +163,16 @@ function renderHistory() {
 
 function renderBoard() {
     const boardElement = document.getElementById("chessBoard");
+
+    if (!boardElement) {
+        return;
+    }
+
     boardElement.innerHTML = "";
+
+    if (!currentFen) {
+        return;
+    }
 
     const boardData = parseFen(currentFen);
     const legalTargets = getLegalTargetsFromSelected();
@@ -114,6 +185,10 @@ function renderBoard() {
             const isLight = (rank + file) % 2 === 0;
             square.className = "square " + (isLight ? "light" : "dark");
             square.dataset.square = squareName;
+
+            if (isThinking) {
+                square.classList.add("locked");
+            }
 
             if (selectedSquare === squareName) {
                 square.classList.add("selected");
@@ -131,7 +206,7 @@ function renderBoard() {
 
             const piece = boardData[squareName];
 
-            if (piece) {
+            if (piece && pieceMap[piece]) {
                 const span = document.createElement("span");
                 span.className = "piece " + (pieceMap[piece].color === "white" ? "white-piece" : "black-piece");
                 span.innerText = pieceMap[piece].symbol;
@@ -145,6 +220,11 @@ function renderBoard() {
 }
 
 function handleSquareClick(squareName, boardData) {
+    // Khi AI đang tính thì khóa bàn cờ, không cho click
+    if (isThinking) {
+        return;
+    }
+
     const clickedPiece = boardData[squareName];
 
     if (selectedSquare === null) {
@@ -172,7 +252,7 @@ function handleSquareClick(squareName, boardData) {
     if (isLegalMove(move)) {
         sendMove(move);
     } else {
-        document.getElementById("messageText").innerText = "Nước đi không hợp lệ.";
+        setMessage("Nước đi không hợp lệ.");
         selectedSquare = null;
         renderBoard();
     }

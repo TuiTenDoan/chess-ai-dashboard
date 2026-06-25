@@ -1,12 +1,20 @@
 from flask import Flask, render_template, request, jsonify
 import chess
 import math
-import random
 import os
 
 app = Flask(__name__)
 
+# =========================
+# CẤU HÌNH AI
+# =========================
+
 DEFAULT_DEPTH = 3
+
+# Giới hạn độ sâu tối đa để tránh web bị đơ khi chọn mức quá khó
+# Nếu frontend gửi depth = 4 thì backend vẫn tự ép về 3
+MAX_DEPTH = 3
+MIN_DEPTH = 1
 
 PIECE_VALUES = {
     chess.PAWN: 100,
@@ -18,30 +26,65 @@ PIECE_VALUES = {
 }
 
 
+# =========================
+# ROUTE GIAO DIỆN
+# =========================
+
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
+# =========================
+# API: TẠO VÁN MỚI
+# =========================
+
 @app.route("/api/new", methods=["POST"])
 def new_game():
     board = chess.Board()
-    return jsonify(make_response(board, message="Ván mới đã bắt đầu. Bạn cầm quân Trắng."))
 
+    return jsonify(
+        make_response(
+            board,
+            message="Ván mới đã bắt đầu. Bạn cầm quân Trắng."
+        )
+    )
+
+
+# =========================
+# API: NGƯỜI CHƠI ĐI
+# =========================
 
 @app.route("/api/move", methods=["POST"])
 def player_move():
-    data = request.get_json()
+    data = request.get_json(silent=True)
+
+    if not data:
+        board = chess.Board()
+        return jsonify(make_response(board, message="Dữ liệu gửi lên không hợp lệ.")), 400
 
     fen = data.get("fen")
     move_uci = data.get("move")
-    depth = int(data.get("depth", DEFAULT_DEPTH))
+    depth = get_safe_depth(data.get("depth", DEFAULT_DEPTH))
 
-    board = chess.Board(fen)
+    if not fen:
+        board = chess.Board()
+        return jsonify(make_response(board, message="Thiếu trạng thái bàn cờ.")), 400
+
+    if not move_uci:
+        board = chess.Board(fen)
+        return jsonify(make_response(board, message="Thiếu nước đi.")), 400
+
+    try:
+        board = chess.Board(fen)
+    except Exception:
+        board = chess.Board()
+        return jsonify(make_response(board, message="Trạng thái bàn cờ không hợp lệ.")), 400
 
     if board.is_game_over():
         return jsonify(make_response(board, message="Ván cờ đã kết thúc."))
 
+    # Người chơi chỉ được đi khi tới lượt Trắng
     if board.turn != chess.WHITE:
         return jsonify(make_response(board, message="Chưa tới lượt của bạn.")), 400
 
@@ -50,33 +93,72 @@ def player_move():
     if move is None or move not in board.legal_moves:
         return jsonify(make_response(board, message="Nước đi không hợp lệ.")), 400
 
+    # Người chơi đi
     player_san = board.san(move)
     board.push(move)
 
     if board.is_game_over():
-        return jsonify(make_response(
-            board,
-            message="Bạn vừa đi: " + player_san,
-            player_move=player_san
-        ))
+        return jsonify(
+            make_response(
+                board,
+                message="Bạn vừa đi: " + player_san,
+                player_move=player_san
+            )
+        )
 
+    # AI đi quân Đen
     ai_move = find_best_move(board, depth)
 
-    if ai_move is not None:
+    if ai_move is not None and ai_move in board.legal_moves:
         ai_san = board.san(ai_move)
         board.push(ai_move)
     else:
         ai_san = None
 
-    return jsonify(make_response(
-        board,
-        message="Bạn đi: " + player_san + (" | AI đi: " + ai_san if ai_san else ""),
-        player_move=player_san,
-        ai_move=ai_san
-    ))
+    return jsonify(
+        make_response(
+            board,
+            message="Bạn đi: " + player_san + (" | AI đi: " + ai_san if ai_san else ""),
+            player_move=player_san,
+            ai_move=ai_san
+        )
+    )
+
+
+# =========================
+# HÀM PHỤ TRỢ
+# =========================
+
+def get_safe_depth(raw_depth):
+    """
+    Nhận depth từ frontend và ép trong khoảng an toàn.
+    Mục đích: tránh người dùng chọn depth quá cao làm server bị đơ.
+    """
+    try:
+        depth = int(raw_depth)
+    except Exception:
+        depth = DEFAULT_DEPTH
+
+    if depth < MIN_DEPTH:
+        depth = MIN_DEPTH
+
+    if depth > MAX_DEPTH:
+        depth = MAX_DEPTH
+
+    return depth
 
 
 def parse_move(board, move_uci):
+    """
+    Chuyển nước đi dạng UCI thành chess.Move.
+    Ví dụ:
+    e2e4
+    g1f3
+
+    Nếu tốt phong cấp thì tự động phong Hậu.
+    Ví dụ:
+    e7e8 -> e7e8q
+    """
     try:
         move = chess.Move.from_uci(move_uci)
 
@@ -84,15 +166,28 @@ def parse_move(board, move_uci):
             return move
 
         promotion_move = chess.Move.from_uci(move_uci + "q")
+
         if promotion_move in board.legal_moves:
             return promotion_move
 
         return None
+
     except Exception:
         return None
 
 
+# =========================
+# AI: MINIMAX + ALPHA-BETA
+# =========================
+
 def find_best_move(board, depth):
+    """
+    AI cầm quân Đen.
+    Điểm dương: Trắng lợi.
+    Điểm âm: Đen lợi.
+
+    Vì AI là Đen nên AI chọn nước đi có điểm nhỏ nhất.
+    """
     legal_moves = list(board.legal_moves)
 
     if not legal_moves:
@@ -121,11 +216,15 @@ def find_best_move(board, depth):
 
 
 def alpha_beta(board, depth, alpha, beta):
-    if depth == 0 or board.is_game_over():
+    """
+    Thuật toán Minimax kết hợp Alpha-Beta Pruning.
+    """
+    if depth <= 0 or board.is_game_over():
         return evaluate_board(board)
 
     legal_moves = order_moves(board, list(board.legal_moves))
 
+    # Trắng là bên tối đa hóa điểm
     if board.turn == chess.WHITE:
         max_eval = -math.inf
 
@@ -142,6 +241,7 @@ def alpha_beta(board, depth, alpha, beta):
 
         return max_eval
 
+    # Đen là bên tối thiểu hóa điểm
     else:
         min_eval = math.inf
 
@@ -160,36 +260,63 @@ def alpha_beta(board, depth, alpha, beta):
 
 
 def order_moves(board, moves):
+    """
+    Sắp xếp nước đi để Alpha-Beta cắt tỉa tốt hơn.
+    Bỏ random.shuffle để AI không bị cảm giác đi ngẫu nhiên lung tung.
+    """
+
     def move_score(move):
         score = 0
 
+        # Ưu tiên nước ăn quân
         if board.is_capture(move):
-            score += 10
+            captured_piece = board.piece_at(move.to_square)
+            moving_piece = board.piece_at(move.from_square)
 
+            if captured_piece:
+                score += PIECE_VALUES[captured_piece.piece_type]
+
+            if moving_piece:
+                score -= PIECE_VALUES[moving_piece.piece_type] // 10
+
+            score += 1000
+
+        # Ưu tiên nước chiếu vua
         if board.gives_check(move):
-            score += 8
+            score += 500
 
+        # Ưu tiên phong cấp
         if move.promotion:
-            score += 6
+            score += 800
 
         return score
 
-    random.shuffle(moves)
     return sorted(moves, key=move_score, reverse=True)
 
 
+# =========================
+# HEURISTIC: ĐÁNH GIÁ BÀN CỜ
+# =========================
+
 def evaluate_board(board):
     """
+    Heuristic đánh giá bàn cờ.
+
     Điểm dương: Trắng lợi thế.
     Điểm âm: Đen lợi thế.
     AI cầm quân Đen nên sẽ chọn nước đi làm điểm nhỏ nhất.
     """
 
+    # Nếu chiếu hết
     if board.is_checkmate():
+        # Nếu tới lượt Trắng mà Trắng bị chiếu hết => Đen thắng
         if board.turn == chess.WHITE:
             return -999999
+
+        # Nếu tới lượt Đen mà Đen bị chiếu hết => Trắng thắng
         return 999999
 
+    # Nếu hòa
     if board.is_stalemate() or board.is_insufficient_material():
         return 0
 
@@ -205,6 +332,7 @@ def evaluate_board(board):
 
         file_index = chess.square_file(square)
         rank_index = chess.square_rank(square)
+
         center_bonus = center_control_bonus(file_index, rank_index)
 
         total_value = value + center_bonus
@@ -214,24 +342,36 @@ def evaluate_board(board):
         else:
             score -= total_value
 
+    # Đánh giá trạng thái chiếu
     if board.is_check():
         if board.turn == chess.WHITE:
+            # Trắng đang bị chiếu => tốt cho Đen
             score -= 30
         else:
+            # Đen đang bị chiếu => tốt cho Trắng
             score += 30
 
     return score
 
 
 def center_control_bonus(file_index, rank_index):
+    """
+    Cộng điểm nếu quân đứng gần trung tâm.
+    """
+    # 4 ô trung tâm chính
     if file_index in [3, 4] and rank_index in [3, 4]:
         return 20
 
+    # Vùng trung tâm mở rộng
     if file_index in [2, 3, 4, 5] and rank_index in [2, 3, 4, 5]:
         return 10
 
     return 0
 
+
+# =========================
+# RESPONSE
+# =========================
 
 def make_response(board, message="", player_move=None, ai_move=None):
     return {
@@ -264,6 +404,10 @@ def get_status_text(board):
 
     return f"Lượt {turn}."
 
+
+# =========================
+# CHẠY APP
+# =========================
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
