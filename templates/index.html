@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Chess AI Dashboard - Đồ án Cờ Vua AI</title>
@@ -20,7 +21,6 @@
 
         <div class="top-actions">
             <span class="pill online">AI Online</span>
-            <span class="pill">Flask + Python</span>
         </div>
     </header>
 
@@ -30,22 +30,22 @@
                 <h2>Đồ án: Web Game Cờ Vua Tích Hợp AI</h2>
                 <p>
                     Người chơi điều khiển quân Trắng, hệ thống AI điều khiển quân Đen.
-                    AI sử dụng thuật toán tìm kiếm nước đi Minimax kết hợp Alpha-Beta Pruning
-                    để tính toán và lựa chọn nước đi tối ưu.
+                    AI sử dụng Minimax, Alpha-Beta Pruning và Heuristic để phân tích thế cờ,
+                    ước lượng lợi thế và lựa chọn nước đi phù hợp.
                 </p>
 
                 <div class="hero-stats">
                     <div>
-                        <strong>8x8</strong>
-                        <span>Bàn cờ tiêu chuẩn</span>
+                        <strong>Minimax</strong>
+                        <span>Mô phỏng các nước đi có thể xảy ra.</span>
                     </div>
                     <div>
-                        <strong>AI</strong>
-                        <span>Minimax Search</span>
+                        <strong>Alpha-Beta</strong>
+                        <span>Cắt tỉa các nhánh tìm kiếm không cần thiết.</span>
                     </div>
                     <div>
-                        <strong>Web</strong>
-                        <span>Python Flask</span>
+                        <strong>Heuristic</strong>
+                        <span>Ước lượng lợi thế của từng trạng thái bàn cờ.</span>
                     </div>
                 </div>
             </div>
@@ -53,10 +53,10 @@
             <div class="algorithm-box">
                 <h3>Thuật toán AI</h3>
                 <ul>
-                    <li>Minimax tìm kiếm các trạng thái bàn cờ.</li>
-                    <li>Alpha-Beta Pruning giảm số nhánh cần duyệt.</li>
-                    <li>Hàm đánh giá dựa trên giá trị quân cờ và kiểm soát trung tâm.</li>
-                    <li>AI ưu tiên nước đi ăn quân, chiếu vua và phong cấp.</li>
+                    <li>Minimax mô phỏng các nước đi có thể xảy ra trong ván cờ.</li>
+                    <li>Alpha-Beta Pruning giúp loại bỏ những nhánh tìm kiếm không cần thiết.</li>
+                    <li>Heuristic dùng để ước lượng lợi thế của từng trạng thái bàn cờ.</li>
+                    <li>AI lựa chọn nước đi phù hợp dựa trên điểm đánh giá của thế cờ.</li>
                 </ul>
             </div>
         </section>
@@ -72,10 +72,10 @@
                     <div class="controls">
                         <label for="depthSelect">Độ sâu AI</label>
                         <select id="depthSelect">
-                            <option value="1">Dễ - Depth 1</option>
-                            <option value="2">Trung bình - Depth 2</option>
-                            <option value="3" selected>Khó - Depth 3</option>
-                            <option value="4">Rất khó - Depth 4</option>
+                            <option value="1">Dễ</option>
+                            <option value="2">Trung bình</option>
+                            <option value="3" selected>Khó</option>
+                            <option value="4">Rất khó</option>
                         </select>
 
                         <button onclick="newGame()">Ván mới</button>
@@ -127,12 +127,6 @@
                     <p id="messageText">Hãy bắt đầu ván mới.</p>
                 </div>
 
-                <div class="card link-card">
-                    <h2>Link Trải Nghiệm Game</h2>
-                    <p>Trải nghiệm trực tiếp tại:</p>
-                    <a href="#" target="_blank">Chess AI Dashboard Web App</a>
-                </div>
-
                 <div class="card history-card">
                     <h2>Lịch sử nước đi</h2>
                     <div id="moveHistory" class="move-history"></div>
@@ -142,7 +136,7 @@
                     <h2>Thông tin đồ án</h2>
                     <p><b>Sinh viên:</b> Nguyễn Tâm Đoan</p>
                     <p><b>Mã số sinh viên:</b> 247060005</p>
-                    <p><b>Trường:</b> TDU</p>
+                    <p><b>Trường:</b> Đại Học Tây Đô - TDU</p>
                     <p><b>Đề tài:</b> Xây dựng web game cờ vua tích hợp AI</p>
                 </div>
             </aside>
@@ -155,4 +149,5 @@
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
+
 </html>
